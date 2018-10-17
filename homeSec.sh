@@ -3,7 +3,7 @@
 programs=(ssmtp fswebcam zip mail)
 dump='/home/jack/sjan/homeSec/pix'
 zips='/home/jack/sjan/homeSec/sendFiles'
-date=$(date +"%Y-%m-%d_%H%M")+
+date=$(date +"%Y-%m-%d_%H%M")
 email='j.mpdesmet@gmail.com'
 
 mkdir -p $dump
@@ -20,7 +20,11 @@ done
 
 fswebcam -r 1280x720 --no-banner $dump/$date.jpg
 
-zip -r $zips/homeSec_$date.zip $dump
+cd $dump
+zip -r $zips/homeSec_$date.zip *
+cd ..
 rm $dump/*
+echo "neuze neuze" | mail -s "Motion Detected" $email -A $zips/homeSec_$date.zip
 
-echo "neuze neuze" | mail -s "Motino Detected" $email -A $zips/homeSec_$date.zip
+
+echo 'message mailed'
