@@ -4,7 +4,7 @@ user=$(whoami)
 dump='/home/'$user'/Pictures/homeSec'
 zips='/home/'$user'/Pictures/sendFiles'
 date=$(date +"%Y-%m-%d_%H%M")
-echo 'what email you want to send it too?'
+echo 'what email you want to send it to?'
 read email
 mkdir -p $dump
 mkdir -p $zips
