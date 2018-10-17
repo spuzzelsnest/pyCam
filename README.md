@@ -26,10 +26,15 @@ Best practice is to reboot after this.
 sudo reboot
 ```
 
-## Running the program
+## Running the App
 
 Run the program with the following command
 
 ```
-./
+./homeSec
 ```
+It will ask you for you e-mail address to send the test file.
+
+## Customisable Options
+
+If you change the code so email is a constante, connecting this to the motion deamon, will make this an auto script to email on motion.
