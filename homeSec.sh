@@ -9,27 +9,21 @@ read email
 mkdir -p $dump
 mkdir -p $zips
 
-echo ---------------
-echo taking picture
-echo ---------------
+echo '----------------'
+echo '|Taking picture|'
+echo '----------------'
 
 fswebcam -r 1280x720 --no-banner $dump/$date.jpg
 
-echo --------------
-echo zipping files
-echo --------------
+echo '-------------------------------------'
+echo '|Zipping files and removing orf File|'
+echo '-------------------------------------'
 cd $dump
 zip -r $zips/homeSec_$date.zip *
-cd ..
-echo ---------------
-echo removing files
-echo ---------------
-
 rm $dump/*
 
-echo --------------------------------------------------------
-echo sending $zips/homeSec_$date.zip to $email
-echo ---------------------------------------------------------
+echo '--------------------------------------------------------'
+echo '|sending' $zips/homeSec_$date.zip to $email
+echo '---------------------------------------------------------'
 
 echo "neuze neuze" | mail -s "Motion Detected" $email -A $zips/homeSec_$date.zip
-
