@@ -6,6 +6,8 @@ zips='/home/jack/sjan/homeSec/sendFiles'
 date=$(date +"%Y-%m-%d_%H%M")+
 email='j.mpdesmet@gmail.com'
 
+mkdir -p $dump
+mkdir -p $zips
 
 apt-get update
 
