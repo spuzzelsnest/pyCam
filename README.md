@@ -37,4 +37,9 @@ It will ask you for you e-mail address to send the test file.
 
 ## Customisable Options
 
-If you change the code so email is a constante, connecting this to the motion deamon, will make this an auto script to email on motion.
+motion.sh can be added to the /etc/motion/motion.conf file in the section:
+
+```
+# Command to be executed when a motion frame is detected (default: none)
+ on_motion_detected /bin/bash /[DIR LOCATIOON]/motion.sh
+```
