@@ -4,17 +4,16 @@ user=$(whoami)
 dump='/home/'$user'/Pictures/homeSec'
 zips='/home/'$user'/Pictures/sendFiles'
 date=$(date +"%Y-%m-%d_%H%M")
-<<<<<<< HEAD:motion.sh
-echo 'what email you want to send it too?'
-email=j.mpdesmet@gmail.com
-=======
 echo 'what email you want to send it to?'
 read email
->>>>>>> 9046e9d693f13de61e383d81ae332d7f116f5eaa:homeSec.sh
 mkdir -p $dump
 mkdir -p $zips
 
-sleep 2m
+echo '----------------'
+echo '|Taking picture|'
+echo '----------------'
+
+fswebcam -r 1280x720 --no-banner $dump/$date.jpg
 
 echo '-------------------------------------'
 echo '|Zipping files and removing orf File|'
