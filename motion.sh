@@ -5,15 +5,11 @@ dump='/home/'$user'/Pictures/homeSec'
 zips='/home/'$user'/Pictures/sendFiles'
 date=$(date +"%Y-%m-%d_%H%M")
 echo 'what email you want to send it too?'
-read email
+email=j.mpdesmet@gmail.com
 mkdir -p $dump
 mkdir -p $zips
 
-echo '----------------'
-echo '|Taking picture|'
-echo '----------------'
-
-fswebcam -r 1280x720 --no-banner $dump/$date.jpg
+sleep 2m
 
 echo '-------------------------------------'
 echo '|Zipping files and removing orf File|'
