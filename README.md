@@ -16,7 +16,7 @@ This will add the additional software and add the user to the necessary groups. 
 
 msmtp is used for sending emails. Make sure this config file is in the home directory of the user who will be sending the emails.
 
-** if you are using a G Mail Account and not using SSL Certificates, make sure "Less secure apps" is enabled for the account. Google said that the option to send over "Less Secure Apps" will be deprecated in Feb 2020
+** if you are using a G Mail Account without OAUTH2, make sure "Less secure apps" is enabled for the account. Google reported that the option to send over "Less Secure Apps" will be deprecated in Feb 2020!
 
 
 ```
@@ -25,10 +25,10 @@ msmtp is used for sending emails. Make sure this config file is in the home dire
 # Set default values for all following accounts.
 
 defaults
-auth            on
 tls             on
+tls_starttls	on
 tls_certcheck   off
-#tls_trust_file         /etc/ssl/certs/ca-certificates.crt
+tls_trust_file  /etc/ssl/certs/ca-certificates.crt
 logfile         ~/.msmtp.log
 
 account gmail
