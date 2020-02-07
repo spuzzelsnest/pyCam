@@ -21,4 +21,5 @@ echo '--------------------------------------------------------'
 echo '|sending' $zips/homeSec_$date.zip to $email
 echo '---------------------------------------------------------'
 
-echo "neuze neuze" | mail -s "Motion Detected" $email -A $zips/homeSec_$date.zip
+echo "neuze neuze" | mutt -s "Motion Detected" -a $zips/homeSec_$date.zip -- $emaily
+
