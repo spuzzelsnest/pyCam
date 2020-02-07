@@ -5,7 +5,7 @@ homeSec is a Raspberry Pi App where a connected webcam sends a picture on comman
 ## Get Started
 ### Installing
 
-Run the preperation file first. This will install msmtp-mta - fswebcam - which are needed for the program to run. 
+Run the preperation file first. This will install msmtp-mta - fswebcam - zip - mail - motion which are needed for the program to run. 
 This will add the additional software and add the user to the necessary groups. It will ask for sudo passwords where needed.
 
 ```
