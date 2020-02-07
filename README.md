@@ -41,6 +41,12 @@ account default : gmail
 
 ```
 
+To encrypt your account password you can use GPG to encrypt it 
+
+```
+gpg --encrypt -o .msmtp-gmail.gpg -r <user>@gmail.com
+```
+
 Best practice is to reboot after this.
 
 ```
