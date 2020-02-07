@@ -4,7 +4,7 @@ user=$(whoami)
 dump='/home/'$user'/Pictures/homeSec'
 zips='/home/'$user'/Pictures/sendFiles'
 date=$(date +"%Y-%m-%d_%H%M")
-email=[you email]
+email=j.mpdesmet@gmail.com
 mkdir -p $dump
 mkdir -p $zips
 
