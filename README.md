@@ -2,24 +2,42 @@
 
 homeSec is a Raspberry Pi App where a connected webcam sends a picture on command to an email address.
 
-## Getting Started
-
-Download the project and unpack it. This App assumes you have a working ssmtp connection and are able to send e-mails from the Raspberry Pi.
-You can verify this by checking the file
-
-```
-cat /etc/ssmtp/ssmtp.conf
-```
-
+## Get Started
 ### Installing
 
-Run the preperation file first.
+Run the preperation file first. This will install msmtp-mta - fswebcam - which are needed for the program to run. 
+This will add the additional software and add the user to the necessary groups. It will ask for sudo passwords where needed.
 
 ```
 ./preps.sh
 ```
 
-This will add the additional software and add the user to the necessary groups. It will ask for sudo passwords where needed.
+### MSMTP config
+
+msmtp is used for sending emails. Make sure this config file is in the home directory of the user who will be sending the emails.
+
+
+```
+#~/.msmtprc
+
+# Set default values for all following accounts.
+defaults
+port 587
+tls on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+
+account gmail
+host smtp.gmail.com
+from <user>@gmail.com
+auth on
+user <user>
+passwordeval gpg --no-tty -q -d ~/.msmtp-gmail.gpg
+
+# Set a default account
+account default : gmail
+
+```
+
 Best practice is to reboot after this.
 
 ```
