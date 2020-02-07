@@ -16,6 +16,8 @@ This will add the additional software and add the user to the necessary groups. 
 
 msmtp is used for sending emails. Make sure this config file is in the home directory of the user who will be sending the emails.
 
+** if you are using a G Mail Account, make sure "Less secure apps" is enabled for the account. 
+
 
 ```
 #~/.msmtprc
@@ -39,6 +41,12 @@ passwordeval gpg -d ~/.msmtp-gmail.gpg
 # Set a default account
 account default : gmail
 
+```
+
+Set the right permissions for the file:
+
+```
+chmod 600 .msmtprc
 ```
 
 To encrypt your account password you can use GPG to encrypt it 
