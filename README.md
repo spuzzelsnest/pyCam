@@ -21,17 +21,20 @@ msmtp is used for sending emails. Make sure this config file is in the home dire
 #~/.msmtprc
 
 # Set default values for all following accounts.
+
 defaults
-port 587
-tls on
-tls_trust_file /etc/ssl/certs/ca-certificates.crt
+auth            on
+tls             on
+tls_certcheck   off
+#tls_trust_file         /etc/ssl/certs/ca-certificates.crt
+logfile         ~/.msmtp.log
 
 account gmail
-host smtp.gmail.com
-from <user>@gmail.com
-auth on
-user <user>
-passwordeval gpg --no-tty -q -d ~/.msmtp-gmail.gpg
+host 		smtp.gmail.com
+from 		<user>@gmail.com
+auth 		on
+user 		<user>
+passwordeval gpg -d ~/.msmtp-gmail.gpg
 
 # Set a default account
 account default : gmail
