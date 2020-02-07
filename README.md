@@ -72,7 +72,8 @@ It will ask you for you e-mail address to send the test file.
 
 ## Customisable Options
 
-motion.sh can be added to the /etc/motion/motion.conf file in the section:
+In motion.sh change line 7 to add an email address to send the homesecurity files to.
+If you want to use the motion option, add 'motion.sh' to the /etc/motion/motion.conf file in the section:
 
 ```
 # Command to be executed when a motion frame is detected (default: none)
