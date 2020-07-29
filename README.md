@@ -49,7 +49,14 @@ Set the right permissions for the file:
 chmod 600 .msmtprc
 ```
 
-To encrypt your account password you can use GPG to encrypt it 
+To encrypt your account password you can use GPG to encrypt it.
+
+If you haven't used GPG before you first need to run the following:
+
+```
+gpg --gen-key
+```
+Use the email address you used to create the account here.
 
 ```
 gpg --encrypt -o .msmtp-gmail.gpg -r <user>@gmail.com
