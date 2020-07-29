@@ -68,17 +68,21 @@ Use next command to encrypt the file. Use the email address you used to create t
 gpg --encrypt -o .msmtp-gmail.gpg -r <user>@gmail.com plaintext.txt
 ```
 Remove your plain text password file!! Also be aware that if you added the pass with echo, it is still in your .[shell]_history!
-
 ```
 rm plaintext.txt
 ```
-
 Best practice is to reboot after this.
-
 ```
 sudo reboot
 ```
-
+After the reboot you can check if the sending of the email is working by issuing the following command.
+```
+echo "This is the test message" | mutt -s "Testing mutt" <RECEPIENT EMAIL> 
+```
+If errors should come up, make sure gpg is properly connecting.
+```
+export GPG_TTY=$(tty)
+```
 ## Running the App
 
 Run the program with the following command
