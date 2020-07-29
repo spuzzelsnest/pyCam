@@ -67,7 +67,7 @@ Use next command to encrypt the file. Use the email address you used to create t
 ```
 gpg --encrypt -o .msmtp-gmail.gpg -r <user>@gmail.com plaintext.txt
 ```
-Remove your plain text password file!! Also be aware that if you added the pass with echo, it is still in your .[shell]_history
+Remove your plain text password file!! Also be aware that if you added the pass with echo, it is still in your .[shell]_history!
 
 ```
 rm plaintext.txt
