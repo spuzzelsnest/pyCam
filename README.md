@@ -75,9 +75,9 @@ Best practice is to reboot after this.
 ```
 sudo reboot
 ```
-After the reboot you can check if the sending of the email is working by issuing the following command.
+After the reboot you can check if the sending email from the command line is working by issuing the following command.
 ```
-echo "This is the test message" | mutt -s "Testing mutt" <RECEPIENT EMAIL> 
+echo "This is the test message" | mutt -s "Testing mutt" <RECIPIENT EMAILL> 
 ```
 If errors should come up, make sure gpg is properly connecting.
 ```
