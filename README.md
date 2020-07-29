@@ -56,10 +56,21 @@ If you haven't used GPG before you first need to run the following:
 ```
 gpg --gen-key
 ```
-Use the email address you used to create the account here.
+create a file with the plain text password.
 
 ```
-gpg --encrypt -o .msmtp-gmail.gpg -r <user>@gmail.com
+echo "MY SUPER SECRET GMAIL PASS" > plaintext.txt
+```
+
+Use next command to encrypt the file. Use the email address you used to create the account here.
+
+```
+gpg --encrypt -o .msmtp-gmail.gpg -r <user>@gmail.com plaintext.txt
+```
+Remove your plain text password file!! Also be aware that if you added the pass with echo, it is still in your .[shell]_history
+
+```
+rm plaintext.txt
 ```
 
 Best practice is to reboot after this.
