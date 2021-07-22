@@ -27,7 +27,6 @@ msmtp is used for sending emails. Make sure this config file is in the home dire
 defaults
 tls             on
 tls_starttls	on
-tls_certcheck   off
 tls_trust_file  /etc/ssl/certs/ca-certificates.crt
 logfile         ~/.msmtp.log
 
