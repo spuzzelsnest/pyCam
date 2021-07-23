@@ -4,26 +4,20 @@ user=$(whoami)
 dump='/home/'$user'/Pictures/homeSec'
 zips='/home/'$user'/Pictures/sendFiles'
 date=$(date +"%Y-%m-%d_%H%M")
-email='j.mpdesmet@protonmail.com'
-#echo 'what email you want to send it to?'
-#read email
+email= <! email address !>
 mkdir -p $dump
 mkdir -p $zips
 
-echo '----------------'
-echo '|Taking picture|'
-echo '----------------'
+sleep 2m
 
-fswebcam -r 1280x720 --no-banner $dump/$date.jpg
-
-echo \n'-------------------------------------'
+echo '-------------------------------------'
 echo '|Zipping files and removing org File|'
 echo '-------------------------------------'
 cd $dump
 zip -r $zips/homeSec_$date.zip *
 rm $dump/*
 
-echo '--------------------------------------------------------'
+echo '---------------------------------------------------------'
 echo '|sending' $zips/homeSec_$date.zip to $email
 echo '---------------------------------------------------------'
 
