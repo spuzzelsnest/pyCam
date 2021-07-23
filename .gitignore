@@ -1,3 +1,8 @@
-#gitignore
-
+.gitignore
 homeSec.sh
+sendMail.sh
+
+#Directories
+Motion/*
+sendFiles/
+
