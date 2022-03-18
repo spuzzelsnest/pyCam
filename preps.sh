@@ -2,7 +2,7 @@
 
 user=$(whoami)
 groups=( mail video motion )
-programs=( msmtp-mta mutt fswebcam zip mail motion )
+programs=( msmtp-mta mutt fswebcam zip mail motion mailutils)
 
 echo hi $user test, test
 echo --------------------------
