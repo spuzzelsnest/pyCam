@@ -17,13 +17,14 @@ secret = str(sys.argv[1:])
 
 def recCam():
     camera = PiCamera()
-    camera.rotation = 180
+    camera.rotation = 0
     camera.resolution = (1024, 768)
     camera.start_preview()
     camera.annotate_text = secret
     camera.start_recording(recFile)
     sleep(5)
     camera.stop_recording()
+
 def testPort(port):
     try:
         s.bind(('127.0.0.1', port))
