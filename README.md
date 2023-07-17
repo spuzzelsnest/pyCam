@@ -30,12 +30,13 @@ tls_starttls	on
 tls_trust_file  /etc/ssl/certs/ca-certificates.crt
 logfile         ~/.msmtp.log
 
-account gmail
+account 	gmail
 host 		smtp.gmail.com
+port		587
 from 		<user>@gmail.com
 auth 		on
 user 		<user>
-passwordeval gpg -d ~/.msmtp-gmail.gpg
+passwordeval 	gpg -d ~/.msmtp-gmail.gpg
 
 # Set a default account
 account default : gmail

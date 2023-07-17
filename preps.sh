@@ -2,7 +2,7 @@
 
 user=$(whoami)
 groups=( mail video motion )
-programs=( msmtp-mta mutt fswebcam zip mail motion mailutils)
+programs=(autoconf build-essential automake pkgconf libtool libzip-dev libjpeg-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libavdevice-dev msmtp-mta mutt fswebcam mail motion mailutils v4l2-loopback-dkms v4l2-loopback-util)
 
 echo hi $user test, test
 echo --------------------------

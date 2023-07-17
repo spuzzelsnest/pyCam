@@ -3,6 +3,6 @@ homeSec.sh
 sendMail.sh
 
 #Directories
-Motion/*
+motion/*
 sendFiles/
 
