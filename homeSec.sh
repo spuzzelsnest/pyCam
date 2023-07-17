@@ -1,7 +1,7 @@
 #!/bin/bash
 
-dump='/home/ggm/Pictures/homeSec'
-zips='/home/ggm/Pictures/sendFiles'
+dump='/home/jack/Pictures/homeSec'
+zips='/home/jack/Pictures/sendFiles'
 date=$(date +"%Y-%m-%d_%H%M")
 email='j.mpdesmet@protonmail.com'
 mkdir -p $dump
