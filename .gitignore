@@ -1,4 +1,6 @@
-REC/
 .env
+.gitignore
 
+#Directories
+REC/
 
