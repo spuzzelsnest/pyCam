@@ -24,7 +24,6 @@ PAGE="""\
 
         function record(){
             alert("Starting suspicious recording");
-            startRecording();
         }
 
         function sendRecordRequest() {
@@ -47,14 +46,14 @@ PAGE="""\
 """
 
 def recCam():
-    camera = PiCamera()
-    camera.rotation = 0
-    camera.resolution = (1024, 768)
-    camera.start_preview()
-    camera.annotate_text = secret
-    camera.start_recording(recFile)
-    sleep(5)
-    camera.stop_recording()
+    with picamera.PiCamera() as camera:
+        camera.rotation = 0
+        camera.resolution = (1024, 768)
+        camera.start_preview()
+        camera.annotate_text = secret
+        camera.start_recording(recFile)
+        sleep(5)
+        camera.stop_recording()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_GET(self):
