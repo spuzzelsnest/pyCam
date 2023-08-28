@@ -19,10 +19,10 @@ PAGE="""\
     <!--
 	function reloadIMG(){
    	    document.getElementById('still').src = 'still.jpg?' + (new Date()).getTime();
-            setTimeout('reloadimg()',5000);
+            setTimeout('reloadIMG()',5000);
         }
 
-        function buttonClick(){
+        function record(){
             alert("Starting suspicious recording");
             startRecording();
         }
@@ -37,7 +37,7 @@ PAGE="""\
   </head>
   <body onLoad="javascript:reloadIMG();">
     <center>
-       <h1>PiCamera Still Capture Demo</h1>
+       <h1>HAKvision</h1>
        <img src="still.jpg" width="1280" height="720" id="still"/>
        <p>
        <button id="record" type="button" onclick="record()">Record Something suspicious</button>
