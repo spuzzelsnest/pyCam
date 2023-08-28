@@ -1,44 +1,33 @@
 #!/bin/python3
 
-import picamera
+import sys, picamera, datetime
 import socketserver
 from http import server
 from time import sleep
 
 
-PAGE = """\
+PAGE="""\
 <html>
-<head>
+  <head>
     <title>HAKvision</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <script type="text/javascript">
-        function reloadIMG() {
-            document.getElementById('still').src = 'still.jpg?' + Date.now();
+    <!--
+	function reloadIMG(){
+   	    document.getElementById('still').src = 'still.jpg?' + (new Date()).getTime();
+            setTimeout('reloadimg()',5000)
         }
-
-        function record() {
-            // Code to initiate recording
-        }
-
-	function alert() {
-	    document.getElementById("record").addEventListener("click", function() {
-  		alert ("Recording Started and uploaded to the Managment Console");
-	    });
-        }
-
-        window.onload = function() {
-            reloadIMG();
-            setInterval(reloadIMG, 5000);
-        };
+    //-->
     </script>
-</head>
-<body>
+  </head>
+  <body onLoad="javascript:reloadIMG();">
     <center>
-        <h1>Hakvision home page</h1>
-        <img src="still.jpg" width="1280" height="720" id="still"/>
-        <p>
-        <button id="record" type="button" onclick="record()">Record Something suspicious</button>
+       <h1>PiCamera Still Capture Demo</h1>
+       <img src="still.jpg" width="1280" height="720" id="still"/>
+       <p>
+       <button id="record" type="button" onclick="record()">Record Something suspicious</button>
     </center>
-</body>
+  </body>
 </html>
 """
 
@@ -61,6 +50,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_header('Cache-Control', 'no-cache, private')
             self.send_header('Pragma', 'no-cache')
             with picamera.PiCamera(resolution='1280x720') as camera:
+                camera.rotation = 0
                 self.send_header('Content-Type', 'image/jpeg')
                 self.end_headers()
                 camera.capture(self.wfile, format='jpeg')
@@ -71,6 +61,25 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
+
+#VARS
+date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
+recFile = '/home/hikvision/FTP/recording' + date + '.h264'
+secret = str(sys.argv[1:])
+
+def recCam():
+    camera = PiCamera()
+    camera.rotation = 0
+    camera.resolution = (1024, 768)
+    camera.start_preview()
+    camera.annotate_text = secret
+    camera.start_recording(recFile)
+    sleep(5)
+    camera.stop_recording()
+
+
+#record = document.getElementById("record")
+#record.addEventListener("click", pyodide.create_proxy(download_handler))
 
 address = ('', 8000)
 server = StreamingServer(address, StreamingHandler)
