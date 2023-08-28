@@ -7,7 +7,7 @@ from time import sleep
 
 # VARS
 date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
-recFile = '/home/hikvision/FTP/recording' + date + '.h264'
+recFile = '/home/hikvision/FTP/recording/' + date + '.h264'
 secret = str(sys.argv[1:])
 
 PAGE="""\
@@ -17,9 +17,21 @@ PAGE="""\
     <link rel="icon" type="image/png" href="favicon.png">
     <script type="text/javascript">
     <!--
+        var isPaused = false;
+
 	function reloadIMG(){
    	    document.getElementById('still').src = 'still.jpg?' + (new Date()).getTime();
             setTimeout('reloadIMG()',5000);
+        }
+
+        function toggleCamera() {
+             isPaused = !isPaused;
+             var imgElement = document.getElementById("still");
+             if (isPaused) {
+                 imgElement.style.display = "none";  // Hide the image
+             } else {
+                 imgElement.style.display = "block"; // Show the image
+             }
         }
 
         function record(){
@@ -27,6 +39,7 @@ PAGE="""\
         }
 
         function sendRecordRequest() {
+            record();
             var xhr = new XMLHttpRequest();
             xhr.open("GET", "/record", true);  // Specify the route on the server
             xhr.send();
@@ -56,6 +69,8 @@ def recCam():
         camera.stop_recording()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
+    paused = False
+
     def do_GET(self):
         if self.path == '/':
             self.send_response(301)
@@ -68,28 +83,36 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_header('Content-Length', len(content))
             self.end_headers()
             self.wfile.write(content)
-        elif self.path.startswith('/favicon.png'):
+        elif self.path == '/favicon.png':
             self.send_response(200)
             self.send_header('Content-Type', 'image/png')
-            self.send_headers()
+            self.end_headers()
             with open('favicon.png', 'rb') as f:
                 self.wfile.write(f.read())
         elif self.path.startswith('/still.jpg'):
-            self.send_response(200)
-            self.send_header('Age', 0)
-            self.send_header('Cache-Control', 'no-cache, private')
-            self.send_header('Pragma', 'no-cache')
-            with picamera.PiCamera(resolution='1280x720') as camera:
-                camera.rotation = 0
-                self.send_header('Content-Type', 'image/jpeg')
-                self.end_headers()
-                camera.capture(self.wfile, format='jpeg')
+            if not StreamingHandler.paused:
+                self.send_response(200)
+                self.send_header('Age', 0)
+                self.send_header('Cache-Control', 'no-cache, private')
+                self.send_header('Pragma', 'no-cache')
+                with picamera.PiCamera(resolution='1280x720') as camera:
+                    camera.rotation = 0
+                    self.send_header('Content-Type', 'image/jpeg')
+                    self.end_headers()
+                    camera.capture(self.wfile, format='jpeg')
         elif self.path == '/record':
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
             self.wfile.write("Starting suspicious recording!".encode('utf-8'))
             recCam()
+        elif self.path == '/toggle_pause':
+            StreamingHandler.paused = not StreamingHandler.paused
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(("Paused: " + str(StreamingHandler.paused)).encode('utf-8'))
+            return
         else:
             self.send_error(404)
             self.end_headers()
