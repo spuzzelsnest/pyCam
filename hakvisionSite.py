@@ -88,7 +88,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         elif self.path == '/record':
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
-            self.end.headers()
+            self.end_headers()
             self.wfile.write("Starting suspicious recording!".encode('utf-8'))
             recCam()
         else:
