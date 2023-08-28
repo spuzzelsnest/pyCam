@@ -7,8 +7,8 @@ from time import sleep
 
 # VARS
 date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
-recFile = '/home/hikvision/FTP/recording/' + date + '.h264'
 secret = str(sys.argv[1:])
+rec_counter = 1
 
 PAGE="""\
 <html>
@@ -59,12 +59,15 @@ PAGE="""\
 """
 
 def recCam():
+    global rec_counter
+    recFile = f'/home/hikvision/FTP/recording/{rec_counter}_{date}.h264'
     with picamera.PiCamera() as camera:
         camera.rotation = 0
         camera.resolution = (1024, 768)
         camera.start_preview()
         camera.annotate_text = secret
         camera.start_recording(recFile)
+        rec_counter += 1
         sleep(5)
         camera.stop_recording()
 
