@@ -29,7 +29,7 @@ PAGE="""\
 
         function sendRecordRequest() {
             var xhr = new XMLHttpRequest();
-            xhr.open("GET", "/start_record", true);  // Specify the route on the server
+            xhr.open("GET", "/record", true);  // Specify the route on the server
             xhr.send();
         }
     //-->
@@ -40,7 +40,7 @@ PAGE="""\
        <h1>HAKvision</h1>
        <img src="still.jpg" width="1280" height="720" id="still"/>
        <p>
-       <button id="record" type="button" onclick="record()">Record Something suspicious</button>
+       <button id="record" type="button" onclick="sendRecordRequest()">Record Something suspicious</button>
     </center>
   </body>
 </html>
@@ -69,6 +69,12 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_header('Content-Length', len(content))
             self.end_headers()
             self.wfile.write(content)
+        elif self.path.startswith('/favicon.png'):
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/png')
+            self.send_headers()
+            with open('favicon.png', 'rb') as f:
+                self.wfile.write(f.read())
         elif self.path.startswith('/still.jpg'):
             self.send_response(200)
             self.send_header('Age', 0)
@@ -79,7 +85,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'image/jpeg')
                 self.end_headers()
                 camera.capture(self.wfile, format='jpeg')
-        elif self.path == '/start_recording':
+        elif self.path == '/record':
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end.headers()
