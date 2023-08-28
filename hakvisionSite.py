@@ -5,6 +5,10 @@ import socketserver
 from http import server
 from time import sleep
 
+# VARS
+date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
+recFile = '/home/hikvision/FTP/recording' + date + '.h264'
+secret = str(sys.argv[1:])
 
 PAGE="""\
 <html>
@@ -15,7 +19,18 @@ PAGE="""\
     <!--
 	function reloadIMG(){
    	    document.getElementById('still').src = 'still.jpg?' + (new Date()).getTime();
-            setTimeout('reloadimg()',5000)
+            setTimeout('reloadimg()',5000);
+        }
+
+        function buttonClick(){
+            alert("Starting suspicious recording");
+            startRecording();
+        }
+
+        function sendRecordRequest() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/start_record", true);  // Specify the route on the server
+            xhr.send();
         }
     //-->
     </script>
@@ -30,6 +45,16 @@ PAGE="""\
   </body>
 </html>
 """
+
+def recCam():
+    camera = PiCamera()
+    camera.rotation = 0
+    camera.resolution = (1024, 768)
+    camera.start_preview()
+    camera.annotate_text = secret
+    camera.start_recording(recFile)
+    sleep(5)
+    camera.stop_recording()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -54,6 +79,12 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'image/jpeg')
                 self.end_headers()
                 camera.capture(self.wfile, format='jpeg')
+        elif self.path == '/start_recording':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end.headers()
+            self.wfile.write("Starting suspicious recording!".encode('utf-8'))
+            recCam()
         else:
             self.send_error(404)
             self.end_headers()
@@ -61,25 +92,6 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
-
-#VARS
-date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
-recFile = '/home/hikvision/FTP/recording' + date + '.h264'
-secret = str(sys.argv[1:])
-
-def recCam():
-    camera = PiCamera()
-    camera.rotation = 0
-    camera.resolution = (1024, 768)
-    camera.start_preview()
-    camera.annotate_text = secret
-    camera.start_recording(recFile)
-    sleep(5)
-    camera.stop_recording()
-
-
-#record = document.getElementById("record")
-#record.addEventListener("click", pyodide.create_proxy(download_handler))
 
 address = ('', 8000)
 server = StreamingServer(address, StreamingHandler)
