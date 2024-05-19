@@ -32,7 +32,7 @@ PAGE="""\
        <button id="record" type="button" onclick="sendRecordRequest()">Record Something suspicious</button>
     </center>
   </body>
-1024, 768</html>
+</html>
 """
 
 class StreamingOutput(io.BufferedIOBase):
