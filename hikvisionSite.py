@@ -130,7 +130,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         camera.start_encoder(encoder_recorder, FileOutput(rec_file))
         time.sleep(RECORDING_DURATION)
         camera.stop_encoder(encoder_recorder)
-        logging.inf0("Recording Stopped")
+        logging.info("Recording Stopped")
 
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     def __init__(self, *args, output=None, **kwargs):
