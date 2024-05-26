@@ -29,7 +29,7 @@ PAGE = """\
 <body>
     <center>
        <h1>Security Portal CCTV Surveillance Camera</h1>
-       <img src="stream.mjpg" width="1024" height="768" id="still"/>
+       <img src="stream.mjpg" width="640" height="480" id="still"/>
        <p>
        <button id="record" type="button" onclick="sendRecordRequest()">Record Something suspicious</button>
     </center>
@@ -103,9 +103,9 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
 camera = Picamera2()
 
 stream_config = camera.create_video_configuration(
-    main={"size": (1024, 768), "format": "RGB888"},
-    lores={"size": (1024, 768), "format": "YUV420"},
-    raw={"size": (1024, 768)},
+    main={"size": (640, 480), "format": "RGB888"},
+    lores={"size": (640, 480), "format": "YUV420"},
+    raw={"size": (640, 480)},
     display=None
 )
 

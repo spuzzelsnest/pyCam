@@ -14,7 +14,7 @@ import signal
 
 # Define configuration parameters
 PORT = 8000
-STREAM_RESOLUTION = (1024, 768)
+STREAM_RESOLUTION = (640, 480)
 RECORDING_DURATION = 10
 
 # HTML page content
@@ -36,7 +36,7 @@ PAGE = """\
 <body>
     <center>
        <h1>Security Portal CCTV Surveillance Camera</h1>
-       <img src="stream.mjpg" width="1024" height="768" id="still"/>
+       <img src="stream.mjpg" width="640" height="480" id="still"/>
        <p>
        <button id="record" type="button" onclick="sendRecordRequest()">Record Something suspicious</button>
     </center>
@@ -55,6 +55,10 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
+    def __init__(self, *args, output=None, **kwargs):
+        self.output = output
+        super().__init__(*args, **kwargs)
+
     def do_GET(self):
         if self.path == '/':
             self.send_response(301)
@@ -102,6 +106,13 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         except Exception as e:
             logging.warning('Removed streaming client %s: %s', self.client_address, str(e))
 
+    def _send_response(self, content, content_type):
+        self.send_response(200)
+        self.send_header('Content-type', content_type)
+        self.send_header('Content-Length', len(content))
+        self.end_headers()
+        self.wfile.write(content)
+
     def _start_recording(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
@@ -121,6 +132,10 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         camera.stop_encoder(encoder_recorder)
 
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
+    def __init__(self, *args, output=None, **kwargs):
+        self.output = output
+        super().__init__(*args, **kwargs)
+
     allow_reuse_address = True
     daemon_threads = True
 
@@ -132,6 +147,7 @@ def signal_handler(signal, frame):
 def main():
     global server
     global camera
+    global output
 
     # Initialize camera
     camera = Picamera2()
@@ -143,7 +159,7 @@ def main():
 
     # Start the server
     address = ('', PORT)
-    server = StreamingServer(address, StreamingHandler)
+    server = StreamingServer(address, StreamingHandler, output=output)
     server_thread = threading.Thread(target=server.serve_forever)
 
     # Register signal handler
