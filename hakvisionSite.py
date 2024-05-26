@@ -1,33 +1,35 @@
 #!/bin/python3
 
-import sys, io, logging, datetime
+import io
+import logging
+import datetime
 import socketserver
+import threading
+import time
 from http import server
-from time import sleep
-from threading import Condition 
-
 from picamera2 import Picamera2
-from picamera2.encoders import JpegEncoder
+from picamera2.encoders import JpegEncoder, H264Encoder
 from picamera2.outputs import FileOutput
 
-# VARS
-date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
-secret = str(sys.argv[1:])
-rec_counter = 1
-
-picam2 = Picamera2()
-
-
-PAGE="""\
+PAGE = """\
 <html>
-  <head>
-    <title>HAKvision</title>
-    <link rel="icon" type="image/png" href="favicon.png">
-  </head>
-  <body onLoad="javascript:reloadIMG();">
+<head>
+<title>Security Portal CCTV Surveillance Camera</title>
+<link rel="icon" type="image/png" href="favicon.png">
+    <script type="text/javascript">
+    <!--
+        function sendRecordRequest() {
+            var req = new XMLHttpRequest();
+            req.open("GET", "/record", true);
+            req.send();
+        }
+    //-->
+    </script>
+</head>
+<body>
     <center>
-       <h1>HAKvision</h1>
-       <img src="stream.mjpg" width="1120" height="832" id="still"/>
+       <h1>Security Portal CCTV Surveillance Camera</h1>
+       <img src="stream.mjpg" width="1024" height="768" id="still"/>
        <p>
        <button id="record" type="button" onclick="sendRecordRequest()">Record Something suspicious</button>
     </center>
@@ -38,7 +40,7 @@ PAGE="""\
 class StreamingOutput(io.BufferedIOBase):
     def __init__(self):
         self.frame = None
-        self.condition = Condition()
+        self.condition = threading.Condition()
 
     def write(self, buf):
         with self.condition:
@@ -46,8 +48,6 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
-    paused = False
-
     def do_GET(self):
         if self.path == '/':
             self.send_response(301)
@@ -85,22 +85,13 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                     self.wfile.write(frame)
                     self.wfile.write(b'\r\n')
             except Exception as e:
-                logging.warning(
-                    'Removed streaming client %s: %s',
-                    self.client_address, str(e))
+                logging.warning('Removed streaming client %s: %s', self.client_address, str(e))
         elif self.path == '/record':
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
             self.wfile.write("Starting suspicious recording!".encode('utf-8'))
-            recCam()
-        elif self.path == '/toggle_pause':
-            StreamingHandler.paused = not StreamingHandler.paused
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(("Paused: " + str(StreamingHandler.paused)).encode('utf-8'))
-            return
+            threading.Thread(target=recCam).start()
         else:
             self.send_error(404)
             self.end_headers()
@@ -109,17 +100,36 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
 
+camera = Picamera2()
 
-video_config = picam2.create_video_configuration(
-    main={"size": (1120, 832), "format": "RGB888"},
-    lores={"size": (1120, 832), "format": "YUV420"},
-    raw={"size": (1120, 832)},
+stream_config = camera.create_video_configuration(
+    main={"size": (1024, 768), "format": "RGB888"},
+    lores={"size": (1024, 768), "format": "YUV420"},
+    raw={"size": (1024, 768)},
     display=None
 )
+
+camera.configure(stream_config)
+encoder = JpegEncoder()
 output = StreamingOutput()
-picam2.start_recording(JpegEncoder(), FileOutput(output))
+camera.start_recording(encoder, FileOutput(output))
 
+def recCam():
+    global camera
 
-address = ('', 8000)
-server = StreamingServer(address, StreamingHandler)
-server.serve_forever()
+    date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
+    team = "Cam1"
+    rec_file = '/tmp/FTP/recordings/' + team + '_' + date + '.h264'
+
+    # Start recording while keeping the stream running
+    encoder_recorder = H264Encoder(10000000)
+    camera.start_encoder(encoder_recorder, FileOutput(rec_file))
+    time.sleep(10)
+    camera.stop_encoder(encoder_recorder)
+
+try:
+    address = ('', 8000)
+    server = StreamingServer(address, StreamingHandler)
+    server.serve_forever()
+finally:
+    camera.stop_recording()

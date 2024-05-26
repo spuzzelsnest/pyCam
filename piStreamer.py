@@ -10,7 +10,14 @@ from http import server
 from picamera2 import Picamera2
 from picamera2.encoders import JpegEncoder, H264Encoder
 from picamera2.outputs import FileOutput
+import signal
 
+# Define configuration parameters
+PORT = 8000
+STREAM_RESOLUTION = (1024, 768)
+RECORDING_DURATION = 10
+
+# HTML page content
 PAGE = """\
 <html>
 <head>
@@ -54,82 +61,104 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_header('Location', '/index.html')
             self.end_headers()
         elif self.path == '/index.html':
-            content = PAGE.encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/html')
-            self.send_header('Content-Length', len(content))
-            self.end_headers()
-            self.wfile.write(content)
+            self._serve_html_page()
         elif self.path == '/favicon.png':
-            self.send_response(200)
-            self.send_header('Content-Type', 'image/png')
-            self.end_headers()
-            with open('favicon.png', 'rb') as f:
-                self.wfile.write(f.read())
+            self._serve_favicon()
         elif self.path == '/stream.mjpg':
-            self.send_response(200)
-            self.send_header('Age', 0)
-            self.send_header('Cache-Control', 'no-cache, private')
-            self.send_header('Pragma', 'no-cache')
-            self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
-            self.end_headers()
-            try:
-                while True:
-                    with output.condition:
-                        output.condition.wait()
-                        frame = output.frame
-                    self.wfile.write(b'--FRAME\r\n')
-                    self.send_header('Content-Type', 'image/jpeg')
-                    self.send_header('Content-Length', len(frame))
-                    self.end_headers()
-                    self.wfile.write(frame)
-                    self.wfile.write(b'\r\n')
-            except Exception as e:
-                logging.warning('Removed streaming client %s: %s', self.client_address, str(e))
+            self._serve_video_stream()
         elif self.path == '/record':
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write("Starting suspicious recording!".encode('utf-8'))
-            threading.Thread(target=recCam).start()
+            self._start_recording()
         else:
             self.send_error(404)
             self.end_headers()
+
+    def _serve_html_page(self):
+        content = PAGE.encode('utf-8')
+        self._send_response(content, 'text/html')
+
+    def _serve_favicon(self):
+        with open('favicon.png', 'rb') as f:
+            content = f.read()
+        self._send_response(content, 'image/png')
+
+    def _serve_video_stream(self):
+        self.send_response(200)
+        self.send_header('Age', 0)
+        self.send_header('Cache-Control', 'no-cache, private')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
+        self.end_headers()
+        try:
+            while True:
+                with output.condition:
+                    output.condition.wait()
+                    frame = output.frame
+                self.wfile.write(b'--FRAME\r\n')
+                self.send_header('Content-Type', 'image/jpeg')
+                self.send_header('Content-Length', len(frame))
+                self.end_headers()
+                self.wfile.write(frame)
+                self.wfile.write(b'\r\n')
+        except Exception as e:
+            logging.warning('Removed streaming client %s: %s', self.client_address, str(e))
+
+    def _start_recording(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write("Starting suspicious recording!".encode('utf-8'))
+        threading.Thread(target=self._record).start()
+
+    def _record(self):
+        date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
+        team = "Cam1"
+        rec_file = '/tmp/FTP/recordings/' + team + '_' + date + '.h264'
+
+        # Start recording while keeping the stream running
+        encoder_recorder = H264Encoder(10000000)
+        camera.start_encoder(encoder_recorder, FileOutput(rec_file))
+        time.sleep(RECORDING_DURATION)
+        camera.stop_encoder(encoder_recorder)
 
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
 
-camera = Picamera2()
+def signal_handler(signal, frame):
+    logging.info("Shutting down server...")
+    server.shutdown()
+    camera.stop_recording()
 
-stream_config = camera.create_video_configuration(
-    main={"size": (1024, 768), "format": "RGB888"},
-    lores={"size": (1024, 768), "format": "YUV420"},
-    raw={"size": (1024, 768)},
-    display=None
-)
-
-camera.configure(stream_config)
-encoder = JpegEncoder()
-output = StreamingOutput()
-camera.start_recording(encoder, FileOutput(output))
-
-def recCam():
+def main():
+    global server
     global camera
 
-    date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
-    team = "Cam1"
-    rec_file = '/tmp/FTP/recordings/' + team + '_' + date + '.h264'
+    # Initialize camera
+    camera = Picamera2()
+    stream_config = camera.create_video_configuration(main={"size": STREAM_RESOLUTION, "format": "RGB888"}, lores={"size": STREAM_RESOLUTION, "format": "YUV420"}, raw={"size": STREAM_RESOLUTION}, display=None)
+    camera.configure(stream_config)
+    encoder = JpegEncoder()
+    output = StreamingOutput()
+    camera.start_recording(encoder, FileOutput(output))
 
-    # Start recording while keeping the stream running
-    encoder_recorder = H264Encoder(10000000)
-    camera.start_encoder(encoder_recorder, FileOutput(rec_file))
-    time.sleep(10)
-    camera.stop_encoder(encoder_recorder)
-
-try:
-    address = ('', 8000)
+    # Start the server
+    address = ('', PORT)
     server = StreamingServer(address, StreamingHandler)
-    server.serve_forever()
-finally:
-    camera.stop_recording()
+    server_thread = threading.Thread(target=server.serve_forever)
+
+    # Register signal handler
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    # Start server
+    try:
+        logging.info(f"Starting server on port {PORT}...")
+        server_thread.start()
+        server_thread.join()
+    finally:
+        logging.info("Shutting down camera...")
+        camera.stop_recording()
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    main()
