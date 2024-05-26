@@ -27,7 +27,7 @@ PAGE="""\
   <body onLoad="javascript:reloadIMG();">
     <center>
        <h1>HAKvision</h1>
-       <img src="stream.mjpg" width="1280" height="720" id="still"/>
+       <img src="stream.mjpg" width="1120" height="832" id="still"/>
        <p>
        <button id="record" type="button" onclick="sendRecordRequest()">Record Something suspicious</button>
     </center>
@@ -111,9 +111,9 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
 
 
 video_config = picam2.create_video_configuration(
-    main={"size": (1280, 720), "format": "RGB888"},
-    lores={"size": (1280, 720), "format": "YUV420"},
-    raw={"size": (1280, 720)},
+    main={"size": (1120, 832), "format": "RGB888"},
+    lores={"size": (1120, 832), "format": "YUV420"},
+    raw={"size": (1120, 832)},
     display=None
 )
 output = StreamingOutput()
