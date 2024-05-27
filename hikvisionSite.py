@@ -6,6 +6,8 @@ import datetime
 import socketserver
 import threading
 import time
+import subprocess
+
 from http import server
 from picamera2 import Picamera2
 from picamera2.encoders import JpegEncoder, H264Encoder
@@ -122,8 +124,11 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
 
     def _record(self):
         date = datetime.datetime.now().strftime('%m-%d-%Y_%H.%M.%S')
+        secret = 'THIS IS A SECRET RECORDING'
         team = "Cam1"
         rec_file = '/tmp/FTP/recordings/' + team + '_' + date + '.h264'
+        output_file = '/FTP/recordings/' + team + '_' + date + '.h264'
+
 
         # Start recording while keeping the stream running
         encoder_recorder = H264Encoder(10000000)
@@ -131,6 +136,22 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         time.sleep(RECORDING_DURATION)
         camera.stop_encoder(encoder_recorder)
         logging.info("Recording Stopped")
+
+        # Add text to Video
+        ffmpeg_command = [
+
+            'ffmpeg',
+            '-i', rec_file
+            '-vf', f"drawtext=text='{team} - {secret}':fontcolor=white:fontsize=24:x=10:y=10",
+            '-codec:a', 'copy',
+            output_file
+        ]
+
+        try:
+            subprocess.run(ffmpeg_command, check=True)
+            logging.info(f"Text overlay added to video: {output_file}")
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Failed to add text overlay: {e}")
 
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     def __init__(self, *args, output=None, **kwargs):
