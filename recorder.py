@@ -22,5 +22,5 @@ encoderRecorder = H264Encoder(10000000)
 
 camera.start_recording(encoderRecorder, FileOutput(recFile))
 time.sleep(RECORDING_DURATION)
-camera.stop_recording(encoderRecorder)
+camera.stop_recording()
 logging.info("Recording Stopped")
