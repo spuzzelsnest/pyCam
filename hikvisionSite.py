@@ -141,7 +141,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         ffmpeg_command = [
 
             'ffmpeg',
-            '-i', rec_file
+            '-i', rec_file,
             '-vf', f"drawtext=text='{team} - {secret}':fontcolor=white:fontsize=24:x=10:y=10",
             '-codec:a', 'copy',
             output_file
