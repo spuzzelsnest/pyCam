@@ -30,7 +30,7 @@ logging.info("Recording Stopped")
 ffmpeg_command = [
 
     'ffmpeg',
-    '-i', rec_file,
+    '-i', recFile,
     '-vf', f"drawtext=text='{team} - {secret}':fontcolor=white:fontsize=24:x=10:y=10",
     '-codec:a', 'copy',
     outputFile
@@ -38,6 +38,6 @@ ffmpeg_command = [
 
 try:
     subprocess.run(ffmpeg_command, check=True)
-    logging.info(f"Text overlay added to video: {output_file}")
+    logging.info(f"Text overlay added to video: {outputFile}")
 except subprocess.CalledProcessError as e:
     logging.error(f"Failed to add text overlay: {e}")
