@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""pyCam - MJPEG live stream plus on-demand H.264 recording with picamera2."""
 
 import datetime
 import io
@@ -70,11 +69,7 @@ async function sendRecordRequest() {
 
 
 def ensure_dir(path: Path) -> None:
-    """Create `path` if needed and make sure we can write to it.
 
-    Called at startup (fail fast) and again before every recording, because
-    /tmp can be cleaned at any time (reboot, systemd-tmpfiles).
-    """
     try:
         path.mkdir(parents=True, exist_ok=True)
     except OSError as e:
