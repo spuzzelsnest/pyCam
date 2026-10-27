@@ -1,0 +1,38 @@
+[Unit]
+Description=pyCam MJPEG stream and recorder
+After=network-online.target
+Wants=network-online.target
+# Give up after 5 failed starts within 60 s instead of looping forever
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=pycam
+Group=pycam
+# The camera devices (/dev/video*, /dev/media*) belong to the "video" group
+SupplementaryGroups=video
+WorkingDirectory=/home/pycam/pycam
+
+# Settings live in .env (KEY=value lines); the leading "-" means "don't fail if missing"
+EnvironmentFile=-/home/pycam/pycam/.env
+ExecStart=/usr/bin/python3 /home/pycam/pycam/hikvisionSite.py
+
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+
+# Logging: everything goes to the journal under the name "pycam"
+# View with: journalctl -u pycam -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pycam
+Environment=PYTHONUNBUFFERED=1
+
+# Light hardening (safe with the camera). PrivateTmp gives the service its own
+# /tmp, so raw clips are cleaned up automatically when the service stops.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
