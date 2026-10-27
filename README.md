@@ -31,7 +31,7 @@ Once booted back into the os, make sure the following apps are available.
 ```
 sudo apt update
 sudo apt full-update -y
-sudo apt install -y python3 python3-picamera2
+sudo apt install -y python3 python3-picamera2 python3-dotenv
 
 ```
 
@@ -41,7 +41,10 @@ Test the camera.
 vcgencmd get_camera
 supported=1 detected=0, libcamera interfaces=1
 
+rpicam-hello 
+or
 libcamera-hello
+
 [0:16:12.667298543] [1165]  INFO Camera camera_manager.cpp:284 libcamera v0.2.0+120-eb00c13d
 [0:16:12.705065820] [1168]  WARN RPiSdn sdn.cpp:40 Using legacy SDN tuning - please consider moving SDN inside rpi.denoise
 [0:16:12.707286665] [1168]  INFO RPI vc4.cpp:446 Registered camera /base/soc/i2c0mux/i2c@1/imx477@1a to Unicam device /dev/media1 and ISP device /dev/media3
@@ -64,8 +67,18 @@ Stream configuration adjusted
 Clone the repository and change into the directory.
 
 ```
+git clone https://github.com/spuzzelsnest/pyCam.git
+
 cd pyCam
 
+cp .env-example .env
 
+```
 
+Make your chanages to the env file.
+Run the script
 
+```
+python3 hikvisionSite.py
+
+```
