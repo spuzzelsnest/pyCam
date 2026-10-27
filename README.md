@@ -82,3 +82,37 @@ Run the script
 python3 hikvisionSite.py
 
 ```
+
+## Running it as a service
+
+You can also run the script as a service, and follow up with journalctl
+
+
+```
+
+cd /home/pycam/pycam
+
+# put the new hikvisionSite.py here, then:
+
+cp .env.example .env            # adjust values
+
+```
+
+Create the service.
+
+```
+
+sudo mkdir -p /FTP/recordings && sudo chown pycam:pycam /FTP/recordings
+
+sudo cp pycam.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now pycam
+
+```
+
+View the service logging.
+
+```
+journalctl -u pycam -f
+
+```

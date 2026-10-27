@@ -19,7 +19,8 @@ from picamera2.encoders import H264Encoder, JpegEncoder
 from picamera2.outputs import FileOutput
 
 # ---------------------------------------------------------------------------
-# Configuration (every value can be overridden with an environment variable)
+# Configuration (every value can be overridden with an environment variable,
+# e.g. from the .env file that pycam.service loads)
 # ---------------------------------------------------------------------------
 PORT = int(os.environ.get("PYCAM_PORT", 8000))
 STREAM_RESOLUTION = (640, 480)
@@ -28,12 +29,15 @@ BITRATE = 10_000_000
 FRAMERATE = 30  # only used so ffmpeg can timestamp the raw .h264 file
 CAM_NAME = os.environ.get("PYCAM_NAME", "Cam1")
 WATERMARK = os.environ.get("PYCAM_WATERMARK", "THIS IS A SECRET RECORDING")
+LOG_LEVEL = os.environ.get("PYCAM_LOG_LEVEL", "INFO").upper()
 
 # TMP_DIR: raw camera output. OUT_DIR: final video with the text overlay.
 TMP_DIR = Path(os.environ.get("PYCAM_TMP_DIR", "/tmp/FTP/recordings"))
 OUT_DIR = Path(os.environ.get("PYCAM_OUT_DIR", "/FTP/recordings"))
 
 BASE_DIR = Path(__file__).resolve().parent
+
+log = logging.getLogger("pycam")
 
 PAGE = """\
 <!DOCTYPE html>
@@ -68,8 +72,39 @@ async function sendRecordRequest() {
 """
 
 
-def ensure_dir(path: Path) -> None:
+class JournalFormatter(logging.Formatter):
+    """Prefix each line with a syslog priority ("<4>") so journald stores the
+    right severity and `journalctl -p warning -u pycam` works. journald adds
+    the timestamp itself, so we leave it out."""
 
+    PRIORITY = {
+        logging.CRITICAL: 2,
+        logging.ERROR: 3,
+        logging.WARNING: 4,
+        logging.INFO: 6,
+        logging.DEBUG: 7,
+    }
+
+    def format(self, record):
+        return f"<{self.PRIORITY.get(record.levelno, 6)}>{super().format(record)}"
+
+
+def setup_logging() -> None:
+    handler = logging.StreamHandler()  # stderr
+    if os.environ.get("JOURNAL_STREAM"):
+        # Set by systemd when stdout/stderr are connected to the journal.
+        handler.setFormatter(JournalFormatter("%(name)s: %(message)s"))
+    else:
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    logging.basicConfig(level=LOG_LEVEL, handlers=[handler])
+
+
+def ensure_dir(path: Path) -> None:
+    """Create `path` if needed and make sure we can write to it.
+
+    Called at startup (fail fast) and again before every recording, because
+    /tmp can be cleaned at any time (reboot, systemd-tmpfiles).
+    """
     try:
         path.mkdir(parents=True, exist_ok=True)
     except OSError as e:
@@ -112,7 +147,7 @@ class Recorder:
         try:
             self._record()
         except Exception:
-            logging.exception("Recording failed")
+            log.exception("Recording failed")
         finally:
             self._lock.release()
 
@@ -124,18 +159,19 @@ class Recorder:
         raw_file = TMP_DIR / f"{CAM_NAME}_{stamp}.h264"
         out_file = OUT_DIR / f"{CAM_NAME}_{stamp}.mp4"
 
+        log.info("Recording started: %s (%ds)", raw_file, RECORDING_DURATION)
         encoder = H264Encoder(BITRATE)
         self.camera.start_encoder(encoder, FileOutput(str(raw_file)))
         try:
             time.sleep(RECORDING_DURATION)
         finally:
             self.camera.stop_encoder(encoder)
-        logging.info("Recording stopped: %s", raw_file)
+        log.info("Recording stopped: %s", raw_file)
 
         # Burn text into the video. The raw .h264 has no timestamps, so tell
         # ffmpeg the framerate; the quote is swapped because it would end the
         # drawtext value early.
-        text = f"{CAM_NAME} - {WATERMARK}".replace("'", "\u2019")
+        text = f"{CAM_NAME} - {WATERMARK}".replace("'", "’")
         cmd = [
             "ffmpeg", "-y", "-nostdin", "-loglevel", "error",
             "-framerate", str(FRAMERATE), "-i", str(raw_file),
@@ -144,15 +180,25 @@ class Recorder:
             str(out_file),
         ]
         try:
-            subprocess.run(cmd, check=True, timeout=300)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            logging.error("Failed to add text overlay, raw file kept at %s: %s", raw_file, e)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        except subprocess.TimeoutExpired:
+            log.error("ffmpeg timed out, raw file kept at %s", raw_file)
+            return
+        if result.returncode != 0:
+            log.error(
+                "ffmpeg failed (exit %d), raw file kept at %s: %s",
+                result.returncode, raw_file, result.stderr.strip()[-500:],
+            )
             return
         raw_file.unlink(missing_ok=True)
-        logging.info("Text overlay added to video: %s", out_file)
+        log.info("Saved %s (%.1f MB)", out_file, out_file.stat().st_size / 1e6)
 
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Send the built-in access log through logging instead of raw stderr.
+        log.info("%s %s", self.address_string(), format % args)
+
     def do_GET(self):
         if self.path == "/":
             self.send_response(301)
@@ -201,17 +247,19 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 self.wfile.write(frame)
                 self.wfile.write(b"\r\n")
         except (BrokenPipeError, ConnectionResetError):
-            logging.info("Streaming client %s disconnected", self.client_address)
+            log.info("Streaming client %s disconnected", self.client_address[0])
         except Exception as e:
-            logging.warning("Removed streaming client %s: %s", self.client_address, e)
+            log.warning("Removed streaming client %s: %s", self.client_address[0], e)
 
     def _start_recording(self):
         if self.server.recorder.start():
+            log.info("Recording requested by %s", self.client_address[0])
             self._send_response(
                 f"Recording started ({RECORDING_DURATION}s).".encode("utf-8"),
                 "text/plain; charset=utf-8",
             )
         else:
+            log.warning("Recording requested by %s but one is already running", self.client_address[0])
             self._send_response(
                 b"A recording is already in progress.",
                 "text/plain; charset=utf-8",
@@ -237,30 +285,45 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    setup_logging()
+    log.info(
+        "pyCam starting (port=%d, duration=%ds, tmp=%s, out=%s)",
+        PORT, RECORDING_DURATION, TMP_DIR, OUT_DIR,
+    )
 
     # Fail fast with a clear message instead of on the first button press.
     try:
         ensure_dir(TMP_DIR)
         ensure_dir(OUT_DIR)
     except RuntimeError as e:
-        sys.exit(str(e))
+        log.error("%s", e)
+        sys.exit(1)
     if shutil.which("ffmpeg") is None:
-        logging.warning("ffmpeg not found (sudo apt install ffmpeg): recordings will stay raw .h264")
+        log.warning("ffmpeg not found (sudo apt install ffmpeg): recordings will stay raw .h264")
 
-    camera = Picamera2()
-    camera.configure(
-        camera.create_video_configuration(
-            main={"size": STREAM_RESOLUTION, "format": "RGB888"},
-            lores={"size": STREAM_RESOLUTION, "format": "YUV420"},
-            raw={"size": STREAM_RESOLUTION},
-            display=None,
+    camera = None
+    try:
+        camera = Picamera2()
+        camera.configure(
+            camera.create_video_configuration(
+                main={"size": STREAM_RESOLUTION, "format": "RGB888"},
+                lores={"size": STREAM_RESOLUTION, "format": "YUV420"},
+                raw={"size": STREAM_RESOLUTION},
+                display=None,
+            )
         )
-    )
-    output = StreamingOutput()
-    camera.start_recording(JpegEncoder(), FileOutput(output))
+        output = StreamingOutput()
+        camera.start_recording(JpegEncoder(), FileOutput(output))
+        httpd = StreamingServer(("", PORT), StreamingHandler, output, Recorder(camera))
+    except Exception:
+        log.exception("Could not start camera or web server (camera busy? port %d in use?)", PORT)
+        if camera is not None:
+            try:
+                camera.close()
+            except Exception:
+                pass
+        sys.exit(1)
 
-    httpd = StreamingServer(("", PORT), StreamingHandler, output, Recorder(camera))
     server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
 
     stop = threading.Event()
@@ -268,15 +331,16 @@ def main():
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
 
     try:
-        logging.info("Starting server on port %d...", PORT)
+        log.info("Listening on port %d", PORT)
         server_thread.start()
         stop.wait()
     finally:
-        logging.info("Shutting down...")
+        log.info("Shutting down...")
         httpd.shutdown()
         httpd.server_close()
         camera.stop_recording()
         camera.close()
+        log.info("Stopped")
 
 
 if __name__ == "__main__":
